@@ -50,7 +50,6 @@ class Weather:
         try:
             response.raise_for_status()
             if response.json():
-                # print(response.json())
                 weather_data = response.json()['DailyForecasts'][0]['Day']
                 return {
                     'temperature': weather_data['WetBulbTemperature']['Average']['Value'],
@@ -62,7 +61,29 @@ class Weather:
             return None
 
 
+class BadWeatherModel:
+    temp_thresholds = (-7, 29)
+    wind_speed_threshold = 50
+    humidity_threshold = 65
+    rain_chance_threshold = 80
+
+    @classmethod
+    def is_weather_bad(cls, weather_data):
+        if all(key in weather_data for key in ['temperature', 'wind_speed', 'humidity', 'rain_chance']):
+            is_temp_bad = weather_data['temperature'] not in range(
+                *cls.temp_thresholds)
+            is_wind_bad = weather_data['wind_speed'] > cls.wind_speed_threshold
+            is_humidity_bad = weather_data['humidity'] > cls.humidity_threshold
+            is_rain_bad = weather_data['rain_chance'] > cls.rain_chance_threshold
+            return any((is_temp_bad, is_wind_bad, is_humidity_bad, is_rain_bad))
+        return True
+
+
 if __name__ == '__main__':
     accuweather_token = os.getenv('accuweather_token')
-    weather_loc = Weather('London')
-    print(weather_loc.get_one_day_forecast())
+    # weather_loc = Weather('London')
+    # print(weather_loc.get_one_day_forecast())
+    print(BadWeatherModel.is_weather_bad({'temperature': 20,
+                                          'wind_speed': 40,
+                                          'humidity': 40,
+                                          'rain_chance': 30}))
