@@ -4,6 +4,7 @@ import os
 from dotenv import load_dotenv
 load_dotenv('config.env')
 
+accuweather_token = os.getenv('accuweather_token')
 
 class Weather:
     def __init__(self, location):
@@ -86,4 +87,4 @@ if __name__ == '__main__':
     print(BadWeatherModel.is_weather_bad({'temperature': 20,
                                           'wind_speed': 40,
                                           'humidity': 40,
-                                          'rain_chance': 30}))
+                                          'rain_chance': 1000}))
