@@ -18,8 +18,8 @@ class Weather:
             location: The query string of the location (e.g., "London", "New York")
 
         Returns:
-            The AccuWeather location key (a string) if the location is found, 
-            or None if there is an error or the location is not found
+            accuweather location key(string) if found location,
+            or None if there is an error or loc is not found
         """
         search_url = 'http://dataservice.accuweather.com/locations/v1/search'
 
@@ -34,18 +34,29 @@ class Weather:
             print(f'Error: {e}')
             return None
 
-    def get_current_weather(self):
-        weather_url = f'http://dataservice.accuweather.com/currentconditions/v1/{
+    def get_one_day_forecast(self):
+        """Getting the weather forecast for one day
+
+        Returns:
+            dict(temp, humidity, wind_speed, rain_chance), or None if error
+        """
+
+        weather_url = f'http://dataservice.accuweather.com/forecasts/v1/daily/1day/{
             self.location_key}'
-        params = {'apikey': accuweather_token}
+        params = {'apikey': accuweather_token,
+                  'details': True,
+                  'metric': True}
         response = requests.get(weather_url, params=params)
         try:
             response.raise_for_status()
-            weather_data = response.json()[0]
-            return {
-                'temperature': weather_data['Temperature']['Metric']['Value'],
-                'weather_text': weather_data['WeatherText']
-            }
+            if response.json():
+                # print(response.json())
+                weather_data = response.json()['DailyForecasts'][0]['Day']
+                return {
+                    'temperature': weather_data['WetBulbTemperature']['Average']['Value'],
+                    'wind_speed': weather_data['Wind']['Speed']['Value'],
+                    'humidity': weather_data['RelativeHumidity']['Average'],
+                    'rain_chance': weather_data['RainProbability']}
         except Exception as e:
             print(f'Error: {e}')
             return None
@@ -54,4 +65,4 @@ class Weather:
 if __name__ == '__main__':
     accuweather_token = os.getenv('accuweather_token')
     weather_loc = Weather('London')
-    print(weather_loc.get_current_weather())
+    print(weather_loc.get_one_day_forecast())
