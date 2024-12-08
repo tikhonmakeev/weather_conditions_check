@@ -13,8 +13,16 @@ def index():
 @app.route('/', methods=['POST'])
 def index_post():
     request_data = request.form
-    processed_data = process_data(request_data)
-    return jsonify(processed_data), 200
+    try:
+        processed_data = process_data(request_data)
+        is_bad_weather_at_start = "неприятная" if processed_data[
+            'is_bad_weather_at_start'] else "приемлимая"
+        is_bad_weather_at_end = "неприятная" if processed_data[
+            'is_bad_weather_at_end'] else "приемлимая"
+        return render_template('personal.html', start_status=is_bad_weather_at_start, end_status=is_bad_weather_at_end,
+                               start_city=request_data['startpoint'], end_city=request_data['endpoint'])
+    except Exception as e:
+        return render_template('on_error.html', error=e)
 
 
 def process_data(data):
