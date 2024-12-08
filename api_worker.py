@@ -6,6 +6,7 @@ load_dotenv('config.env')
 
 accuweather_token = os.getenv('accuweather_token')
 
+
 class Weather:
     def __init__(self, location):
         self.location = location
@@ -29,11 +30,10 @@ class Weather:
         response = requests.get(search_url, params=params)
         try:
             response.raise_for_status()
-            if response.json():
-                return response.json()[0]['Key']
-        except Exception as e:
-            print(f'Error: {e}')
-            return None
+            return response.json()[0]['Key']
+        except IndexError as e:
+            print(f'IndexError: {e}')
+            raise NameError(f'city {self.location} not found')
 
     def get_one_day_forecast(self):
         """Getting the weather forecast for one day
