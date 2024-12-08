@@ -2,9 +2,17 @@ import requests
 import json
 import os
 from dotenv import load_dotenv
+from requests.exceptions import ConnectionError, HTTPError
 load_dotenv('config.env')
 
 accuweather_token = os.getenv('accuweather_token')
+
+
+class MyError(Exception):
+    def __init__(self, name, desc):
+        super().__init__(self, name)
+        self.name = name
+        self.desc = desc
 
 
 class Weather:
@@ -27,13 +35,28 @@ class Weather:
 
         params = {'q': self.location,
                   'apikey': accuweather_token}
-        response = requests.get(search_url, params=params)
         try:
+            response = requests.get(search_url, params=params)
             response.raise_for_status()
             return response.json()[0]['Key']
         except IndexError as e:
             print(f'IndexError: {e}')
-            raise NameError(f'city {self.location} not found')
+            raise MyError(f'city {self.location} not found',
+                          desc='Проверьте правильность введенных данных')
+        except HTTPError as e:
+            if e.response.status_code == 503:
+                txt = json.loads(e.response.text)
+                msg = txt.get('Message')
+                if msg:
+                    raise MyError(
+                        'wrong API key', desc='Возможно ваш API-ключ достиг лимита, или неверный')
+                else:
+                    raise e
+            else:
+                raise e
+        except ConnectionError:
+            raise MyError(
+                'API unavailable', desc='Возможно у вас отсутствует соединение, или недоступен API-сервис ')
 
     def get_one_day_forecast(self):
         """Getting the weather forecast for one day
@@ -47,8 +70,8 @@ class Weather:
         params = {'apikey': accuweather_token,
                   'details': True,
                   'metric': True}
-        response = requests.get(weather_url, params=params)
         try:
+            response = requests.get(weather_url, params=params)
             response.raise_for_status()
             if response.json():
                 weather_data = response.json()['DailyForecasts'][0]['Day']
@@ -57,6 +80,27 @@ class Weather:
                     'wind_speed': weather_data['Wind']['Speed']['Value'],
                     'humidity': weather_data['RelativeHumidity']['Average'],
                     'rain_chance': weather_data['RainProbability']}
+            else:
+                return None
+
+        except HTTPError as e:
+            if e.response.status_code == 503:
+                txt = json.loads(e.response.text)
+                msg = txt.get('Message')
+                if msg:
+                    raise MyError(
+                        'wrong API key', desc='Возможно ваш API-ключ достиг лимита, или неверный')
+                else:
+                    raise e
+            else:
+                raise e
+        except ConnectionError:
+            raise MyError(
+                'API unavailable', desc='Возможно у вас отсутствует соединение, или недоступен API-сервис ')
+
+        except ConnectionError:
+            raise MyError(
+                'API unavailable', desc='Возможно у вас отсутствует соединение, или недоступен API-сервис ')
         except Exception as e:
             print(f'Error: {e}')
             return None
@@ -82,7 +126,7 @@ class BadWeatherModel:
 
 if __name__ == '__main__':
     accuweather_token = os.getenv('accuweather_token')
-    # weather_loc = Weather('London')
+    weather_loc = Weather('London')
     # print(weather_loc.get_one_day_forecast())
     print(BadWeatherModel.is_weather_bad({'temperature': 20,
                                           'wind_speed': 40,

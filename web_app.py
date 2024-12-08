@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify, render_template
-from api_worker import Weather, BadWeatherModel
+from api_worker import Weather, BadWeatherModel, MyError
 
 
 app = Flask(__name__)
@@ -21,8 +21,10 @@ def index_post():
             'is_bad_weather_at_end'] else "приемлимая"
         return render_template('personal.html', start_status=is_bad_weather_at_start, end_status=is_bad_weather_at_end,
                                start_city=request_data['startpoint'], end_city=request_data['endpoint'])
+    except MyError as e:
+        return render_template('on_error.html', error=e.name, error_desc=e.desc)
     except Exception as e:
-        return render_template('on_error.html', error=e)
+        return render_template('on_error.html', error=e, desc=None)
 
 
 def process_data(data):
